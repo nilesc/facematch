@@ -3,10 +3,13 @@ import numpy as np
 import tensorflow as tf
 from timeit import timeit
 
+
 class Embedder:
 
     def __init__(self, protobuf_file_path):
-        # Based on code from: https://blog.metaflow.fr/tensorflow-how-to-freeze-a-model-and-serve-it-with-a-python-api-d4f3596b3adc
+        # Based on code from: 
+        # https://blog.metaflow.fr/tensorflow-how-to-freeze-a-model-
+        # and-serve-it-with-a-python-api-d4f3596b3adc
         with tf.gfile.GFile(protobuf_file_path, 'rb') as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
@@ -27,7 +30,9 @@ class Embedder:
                 phase_train: False,
             })
 
+
 if __name__ == '__main__':
-    assert len(sys.argv) == 2, 'Running Embedder on its own requires a protobuf file'
+    assert len(sys.argv) == 2,\
+            'Running Embedder on its own requires a protobuf file'
     embedder = Embedder(sys.argv[1])
     print(timeit(embedder.embed, number=1))
