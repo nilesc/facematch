@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 import tensorflow as tf
 
 class Embedder:
@@ -15,9 +16,18 @@ class Embedder:
         self.graph = graph
 
     def embed(self):
-        pass
+        image_input = self.graph.get_tensor_by_name('prefix/input:0')
+        phase_train = self.graph.get_tensor_by_name('prefix/phase_train:0')
+        embedding = self.graph.get_tensor_by_name('prefix/embeddings:0')
+
+        with tf.Session(graph=self.graph) as sess:
+            embedding_out = sess.run(embedding, feed_dict={
+                image_input: np.zeros((1, 150, 150, 3)),
+                phase_train: False,
+            })
+        return embedding_out.shape
 
 if __name__ == '__main__':
     assert len(sys.argv) == 2, 'Running Embedder on its own requires a protobuf file'
     embedder = Embedder(sys.argv[1])
-    embedder.embed()
+    print(embedder.embed())
