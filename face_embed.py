@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import tensorflow as tf
+from timeit import timeit
 
 class Embedder:
 
@@ -21,13 +22,12 @@ class Embedder:
         embedding = self.graph.get_tensor_by_name('prefix/embeddings:0')
 
         with tf.Session(graph=self.graph) as sess:
-            embedding_out = sess.run(embedding, feed_dict={
+            return sess.run(embedding, feed_dict={
                 image_input: np.zeros((1, 150, 150, 3)),
                 phase_train: False,
             })
-        return embedding_out.shape
 
 if __name__ == '__main__':
     assert len(sys.argv) == 2, 'Running Embedder on its own requires a protobuf file'
     embedder = Embedder(sys.argv[1])
-    print(embedder.embed())
+    print(timeit(embedder.embed, number=1))
