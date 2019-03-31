@@ -8,6 +8,10 @@ __pycache__/
 
 # .pb files
 *.pb
+#
+# .db files
+*.db
+*.db-journal
 
 # C extensions
 *.so
