@@ -22,12 +22,20 @@ conn = sqlite3.connect(database_file, detect_types=sqlite3.PARSE_DECLTYPES)
 
 c = conn.cursor()
 c.execute('DROP TABLE IF EXISTS videos')
+c.execute('DROP TABLE IF EXISTS frames')
+
 c.execute('''CREATE TABLE videos
         (id INTEGER PRIMARY KEY,
          embedding array)''')
+c.execute('''CREATE TABLE frames
+        (video_id INTEGER,
+         pose array,
+         FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
 c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
 c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
-c.execute('SELECT * from videos')
+c.execute('INSERT INTO frames (video_id) values (?)', (1,))
+c.execute('INSERT INTO frames (video_id) values (?)', (1,))
+c.execute('SELECT video_id FROM frames')
 data = c.fetchall()
 print(data)
