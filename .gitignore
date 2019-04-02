@@ -8,10 +8,16 @@ __pycache__/
 
 # .pb files
 *.pb
-#
+
 # .db files
 *.db
 *.db-journal
+
+# .h5 files
+*.h5
+
+# .pkl files
+*.pkl
 
 # C extensions
 *.so

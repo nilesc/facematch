@@ -1,3 +1,6 @@
 [submodule "facenet"]
 	path = facenet
 	url = https://github.com/davidsandberg/facenet.git
+[submodule "deep-head-pose"]
+	path = deep-head-pose
+	url = https://github.com/natanielruiz/deep-head-pose
