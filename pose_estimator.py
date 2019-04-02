@@ -12,12 +12,14 @@ class PoseEstimator:
         if gpu_available:
             map_location = 'gpu'
 
-        self.model = Hopenet(torchvision.models.resnet.Bottleneck, [3, 4, 6, 3], 66)
-        self.model.load_state_dict(torch.load(weights_path, map_location=map_location))
-
+        self.model = Hopenet(torchvision.models.resnet.Bottleneck,
+                [3, 4, 6, 3],
+                66)
+        self.model.load_state_dict(torch.load(weights_path,
+            map_location=map_location))
 
     def estimate_pose(self, input_image):
-        yaw, pitch, roll =  self.model(input_image.float())
+        yaw, pitch, roll = self.model(input_image.float())
         yaw = F.softmax(yaw, dim=1)
         pitch = F.softmax(pitch, dim=1)
         roll = F.softmax(roll, dim=1)
@@ -33,8 +35,10 @@ class PoseEstimator:
 
 
 if __name__ == '__main__':
-    pe = PoseEstimator('pose_weights/hopenet_robust_alpha1.pkl', gpu_available=False)
-    yaw, pitch, roll = pe.estimate_pose(torch.from_numpy(np.random.rand(10, 3, 200, 200)))
+    pe = PoseEstimator('pose_weights/hopenet_robust_alpha1.pkl',
+            gpu_available=False)
+    random_inputs = torch.from_numpy(np.random.rand(10, 3, 200, 200))
+    yaw, pitch, roll = pe.estimate_pose(random_inputs)
     print(yaw.data)
     print(pitch.data)
     print(roll.data)
