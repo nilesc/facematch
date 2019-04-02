@@ -14,8 +14,8 @@ class PoseEstimator:
             map_location = 'gpu'
 
         self.model = Hopenet(torchvision.models.resnet.Bottleneck,
-                                [3, 4, 6, 3],
-                                66)
+                            [3, 4, 6, 3],
+                            66)
         self.model.load_state_dict(torch.load(weights_path,
             map_location=map_location))
 
@@ -28,7 +28,8 @@ class PoseEstimator:
         outputs = torch.stack((yaw, pitch, roll), 1)
 
         index_tensor = torch.FloatTensor([index for index in range(66)])
-        index_tensor = index_tensor.view(1, 1, -1).repeat(input_image.shape[0], 3, 1)
+        index_tensor = index_tensor.view(1, 1, -1)
+        index_tensor = index_tensor.repeat(input_image.shape[0], 3, 1)
 
         outputs = torch.sum(outputs * index_tensor, 2) * 3 - 99
 
@@ -37,7 +38,7 @@ class PoseEstimator:
 
 if __name__ == '__main__':
     pe = PoseEstimator('pose_weights/hopenet_robust_alpha1.pkl',
-                        gpu_available=False)
+                    gpu_available=False)
     random_inputs = torch.from_numpy(np.random.rand(10, 3, 200, 200))
     outputs = pe.estimate_pose(random_inputs)
     print(outputs)
