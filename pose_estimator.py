@@ -17,7 +17,7 @@ class PoseEstimator:
                              [3, 4, 6, 3],
                              66)
         self.model.load_state_dict(torch.load(weights_path,
-            map_location=map_location))
+                                   map_location=map_location))
 
     def estimate_pose(self, input_image):
         yaw, pitch, roll = self.model(input_image.float())
