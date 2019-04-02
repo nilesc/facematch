@@ -1,7 +1,7 @@
-import tensorflow as tf
-from keras.models import load_model
+import torch
+import torchvision
+from deep_head_pose.code.hopenet import Hopenet
 
-model = load_model('pose_weights/biwi_model.h5', custom_objects={
-        'GlorotUniform': tf.initializers.glorot_uniform,
-    })
-print(model)
+model = Hopenet(torchvision.models.resnet.Bottleneck, [3, 4, 6, 3], 66)
+model.load_state_dict(torch.load('pose_weights/hopenet_robust_alpha1.pkl', map_location='cpu'))
+print(model.eval())

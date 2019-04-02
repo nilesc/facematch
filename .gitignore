@@ -16,6 +16,9 @@ __pycache__/
 # .h5 files
 *.h5
 
+# .pkl files
+*.pkl
+
 # C extensions
 *.so
 
