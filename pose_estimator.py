@@ -1,3 +1,4 @@
+# Uses a model found here: https://github.com/natanielruiz/deep-head-pose
 import torch
 import torchvision
 from deep_head_pose.code.hopenet import Hopenet
