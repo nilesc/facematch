@@ -22,6 +22,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Frame data
+frame_images_DB/
+
 # Distribution / packaging
 .Python
 build/
