@@ -20,6 +20,12 @@ class PoseEstimator:
                                    map_location=map_location))
 
     def estimate_pose(self, input_image):
+        # Convert from numpy to torch vector
+        input_image = torch.from_numpy(input_image)
+
+        # Move channels to be in pytorch format
+        input_image = input_image.permute(0, 3, 1, 2)
+
         yaw, pitch, roll = self.model(input_image.float())
         yaw = F.softmax(yaw, dim=1)
         pitch = F.softmax(pitch, dim=1)
@@ -33,7 +39,7 @@ class PoseEstimator:
 
         outputs = torch.sum(outputs * index_tensor, 2) * 3 - 99
 
-        return outputs
+        return outputs.data
 
 
 if __name__ == '__main__':
