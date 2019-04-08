@@ -1,6 +1,16 @@
+import io
+import sys
 import sqlite3
 import numpy as np
-import io
+from face_embed import Embedder
+from pose_estimator import PoseEstimator
+
+
+def process_image(images, embedder, pose_estimator):
+    embeddings = embedder.embed(images)
+    poses = pose_estimator.estimate_pose(images)
+    return [(images[i], embeddings[i], pose_estimator[i])\
+            for i in range(len(images))]
 
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
@@ -17,27 +27,32 @@ def convert_array(text):
     return np.load(out)
 
 
-sqlite3.register_adapter(np.ndarray, adapt_array)
-sqlite3.register_converter("array", convert_array)
-database_file = 'video_database.db'
-conn = sqlite3.connect(database_file, detect_types=sqlite3.PARSE_DECLTYPES)
+if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        sys.exit('Requires an embedder weights file and a pose weights file')
 
-c = conn.cursor()
-c.execute('DROP TABLE IF EXISTS videos')
-c.execute('DROP TABLE IF EXISTS frames')
+    sqlite3.register_adapter(np.ndarray, adapt_array)
+    sqlite3.register_converter("array", convert_array)
+    database_file = 'video_database.db'
+    conn = sqlite3.connect(database_file, detect_types=sqlite3.PARSE_DECLTYPES)
 
-c.execute('''CREATE TABLE videos
-        (id INTEGER PRIMARY KEY,
-         embedding array)''')
-c.execute('''CREATE TABLE frames
-        (video_id INTEGER,
-         pose array,
-         FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
-c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
-c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
-c.execute('INSERT INTO frames (video_id) values (?)', (1,))
-c.execute('INSERT INTO frames (video_id) values (?)', (1,))
-c.execute('SELECT video_id FROM frames')
-data = c.fetchall()
-print(data)
+    c = conn.cursor()
+    c.execute('DROP TABLE IF EXISTS videos')
+    c.execute('DROP TABLE IF EXISTS frames')
+
+    c.execute('''CREATE TABLE videos
+            (id INTEGER PRIMARY KEY,
+             embedding array)''')
+    c.execute('''CREATE TABLE frames
+            (video_id INTEGER,
+             pose array,
+             FOREIGN KEY(video_id) REFERENCES videos(id))''')
+
+    c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
+    c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
+    c.execute('INSERT INTO frames (video_id) values (?)', (1,))
+    c.execute('INSERT INTO frames (video_id) values (?)', (1,))
+    c.execute('SELECT video_id FROM frames')
+    data = c.fetchall()
+    print(data)
