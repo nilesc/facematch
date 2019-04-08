@@ -1,4 +1,6 @@
 import io
+import os
+import csv
 import sys
 import sqlite3
 import numpy as np
@@ -25,12 +27,34 @@ def convert_array(text):
     return np.load(out)
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        sys.exit('Requires an embedder weights file and a pose weights file')
+def populate_database(video_directory,
+                      embedder,
+                      pose_estimator,
+                      cursor,
+                      num_videos=None):
+    folders = [f for f in os.listdir(video_directory)
+               if os.path.isdir(os.path.join(video_directory, f))]
+    for number, folder in enumerate(folders):
+        if not number < num_videos:
+            return
 
-    facenet_protobuf = sys.argv[1]
-    pose_weights = sys.argv[2]
+        frame_info = os.path.join(video_directory,
+                                  folder + '.labeled_faces.txt')
+
+        with open(frame_info) as info_file:
+            csv_data = csv.reader(info_file, delimiter=',')
+            for row in csv_data:
+                print(row)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 4:
+        sys.exit('Requires a data directory, an embedder weights file,' + \
+                 'and a pose estimator weights file')
+
+    video_directory = sys.argv[1]
+    facenet_protobuf = sys.argv[2]
+    pose_weights = sys.argv[3]
 
     embedder = Embedder(facenet_protobuf)
     pose_estimator = PoseEstimator(pose_weights)
@@ -52,6 +76,7 @@ if __name__ == '__main__':
              pose array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
+    populate_database(video_directory, embedder, pose_estimator, c, 50)
     batch_size = 10
     # Replace when we have actual data
     dummy_images = np.random.rand(27, 200, 200, 3)
