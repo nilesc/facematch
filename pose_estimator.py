@@ -39,7 +39,7 @@ class PoseEstimator:
 
         outputs = torch.sum(outputs * index_tensor, 2) * 3 - 99
 
-        return outputs.data
+        return outputs.data.numpy()
 
 
 if __name__ == '__main__':
