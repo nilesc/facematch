@@ -9,8 +9,7 @@ from pose_estimator import PoseEstimator
 def process_video(video, embedder, pose_estimator):
     embedding = embedder.embed(np.expand_dims(video[0], 0))
     poses = pose_estimator.estimate_pose(video)
-    return (embedding, [(video[i], poses[i])\
-            for i in range(len(video))])
+    return (embedding, [(video[i], poses[i]) for i in range(len(video))])
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
 def adapt_array(arr):
@@ -41,7 +40,6 @@ if __name__ == '__main__':
     database_file = 'video_database.db'
     conn = sqlite3.connect(database_file, detect_types=sqlite3.PARSE_DECLTYPES)
 
-
     c = conn.cursor()
     c.execute('DROP TABLE IF EXISTS videos')
     c.execute('DROP TABLE IF EXISTS frames')
@@ -57,14 +55,19 @@ if __name__ == '__main__':
     batch_size = 10
     # Replace when we have actual data
     dummy_images = np.random.rand(27, 200, 200, 3)
-    batched_images = [dummy_images[i:i+batch_size] for i in range(0, len(dummy_images), batch_size)]
+    batched_images = [dummy_images[i:i+batch_size]
+                      for i in range(0, len(dummy_images), batch_size)]
 
     for video_number, batch in enumerate(batched_images):
-        embedding, frame_tuples = process_video(batch, embedder, pose_estimator)
+        embedding, frame_tuples = process_video(batch,
+                                                embedder,
+                                                pose_estimator)
 
-        c.execute('INSERT INTO videos (id, embedding) values (?, ?)', (video_number, np.random.rand(128),))
+        c.execute('INSERT INTO videos (id, embedding) values (?, ?)',
+                  (video_number, np.random.rand(128),))
         for frame, pose in frame_tuples:
-            c.execute('INSERT INTO frames (video_id, pose) values (?, ?)', (video_number, pose))
+            c.execute('INSERT INTO frames (video_id, pose) values (?, ?)',
+                      (video_number, pose))
 
     c.execute('SELECT pose FROM frames WHERE video_id=0')
     data = c.fetchall()
