@@ -58,14 +58,14 @@ if __name__ == '__main__':
     # Replace when we have actual data
     dummy_images = np.random.rand(27, 200, 200, 3)
     batched_images = [dummy_images[i:i+batch_size] for i in range(0, len(dummy_images), batch_size)]
-    for batch in batched_images:
-        processed = process_video(batch, embedder, pose_estimator)
-        print(processed)
 
-    c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
-    c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
-    c.execute('INSERT INTO frames (video_id) values (?)', (1,))
-    c.execute('INSERT INTO frames (video_id) values (?)', (1,))
-    c.execute('SELECT video_id FROM frames')
+    for video_number, batch in enumerate(batched_images):
+        embedding, frame_tuples = process_video(batch, embedder, pose_estimator)
+
+        c.execute('INSERT INTO videos (id, embedding) values (?, ?)', (video_number, np.random.rand(128),))
+        for frame, pose in frame_tuples:
+            c.execute('INSERT INTO frames (video_id, pose) values (?, ?)', (video_number, pose))
+
+    c.execute('SELECT pose FROM frames WHERE video_id=0')
     data = c.fetchall()
     print(data)
