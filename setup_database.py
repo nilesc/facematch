@@ -6,12 +6,11 @@ from face_embed import Embedder
 from pose_estimator import PoseEstimator
 
 
-def process_image(images, embedder, pose_estimator):
-    embeddings = embedder.embed(images)
-    poses = pose_estimator.estimate_pose(images)
-    return [(images[i], embeddings[i], pose_estimator[i])\
-            for i in range(len(images))]
-
+def process_video(video, embedder, pose_estimator):
+    embedding = embedder.embed(np.expand_dims(video[0], 0))
+    poses = pose_estimator.estimate_pose(video)
+    return (embedding, [(video[i], poses[i])\
+            for i in range(len(video))])
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
 def adapt_array(arr):
@@ -31,6 +30,12 @@ if __name__ == '__main__':
     if len(sys.argv) != 3:
         sys.exit('Requires an embedder weights file and a pose weights file')
 
+    facenet_protobuf = sys.argv[1]
+    pose_weights = sys.argv[2]
+
+    embedder = Embedder(facenet_protobuf)
+    pose_estimator = PoseEstimator(pose_weights)
+
     sqlite3.register_adapter(np.ndarray, adapt_array)
     sqlite3.register_converter("array", convert_array)
     database_file = 'video_database.db'
@@ -48,6 +53,14 @@ if __name__ == '__main__':
             (video_id INTEGER,
              pose array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
+
+    batch_size = 10
+    # Replace when we have actual data
+    dummy_images = np.random.rand(27, 200, 200, 3)
+    batched_images = [dummy_images[i:i+batch_size] for i in range(0, len(dummy_images), batch_size)]
+    for batch in batched_images:
+        processed = process_video(batch, embedder, pose_estimator)
+        print(processed)
 
     c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
     c.execute('INSERT INTO videos (embedding) values (?)', (np.random.rand(128),))
