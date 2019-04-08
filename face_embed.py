@@ -32,7 +32,7 @@ class Embedder:
 
 
 if __name__ == '__main__':
-    assert len(sys.argv) == 2,\
-            'Running Embedder on its own requires a protobuf file'
+    if len(sys.argv) != 2:
+        sys.exit('Running Embedder on its own requires a protobuf file')
     embedder = Embedder(sys.argv[1])
     print(embedder.embed(np.random.rand(10, 150, 150, 3)))
