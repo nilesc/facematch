@@ -19,20 +19,20 @@ class Embedder:
 
         self.graph = graph
 
-    def embed(self):
+    def embed(self, images):
         image_input = self.graph.get_tensor_by_name('prefix/input:0')
         phase_train = self.graph.get_tensor_by_name('prefix/phase_train:0')
         embedding = self.graph.get_tensor_by_name('prefix/embeddings:0')
 
         with tf.Session(graph=self.graph) as sess:
             return sess.run(embedding, feed_dict={
-                image_input: np.zeros((1, 150, 150, 3)),
+                image_input: images,
                 phase_train: False,
             })
 
 
 if __name__ == '__main__':
-    assert len(sys.argv) == 2,\
-            'Running Embedder on its own requires a protobuf file'
+    if len(sys.argv) != 2:
+        sys.exit('Running Embedder on its own requires a protobuf file')
     embedder = Embedder(sys.argv[1])
-    print(timeit(embedder.embed, number=1))
+    print(embedder.embed(np.random.rand(10, 150, 150, 3)))
