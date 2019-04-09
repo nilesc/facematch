@@ -1,15 +1,13 @@
 import io
+import os
+import csv
 import sys
 import sqlite3
 import numpy as np
+from PIL import Image
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
 
-
-def process_video(video, embedder, pose_estimator):
-    embedding = embedder.embed(np.expand_dims(video[0], 0))
-    poses = pose_estimator.estimate_pose(video)
-    return (embedding, [(video[i], poses[i]) for i in range(len(video))])
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
 def adapt_array(arr):
@@ -25,12 +23,63 @@ def convert_array(text):
     return np.load(out)
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        sys.exit('Requires an embedder weights file and a pose weights file')
+def populate_database(video_directory,
+                      embedder,
+                      pose_estimator,
+                      cursor,
+                      num_people=None):
+    folders = [f for f in os.listdir(video_directory)
+               if os.path.isdir(os.path.join(video_directory, f))]
+    for person_number, folder in enumerate(folders):
+        if person_number == num_people:
+            return
 
-    facenet_protobuf = sys.argv[1]
-    pose_weights = sys.argv[2]
+        frame_info = os.path.join(video_directory,
+                                  folder + '.labeled_faces.txt')
+
+        with open(frame_info) as info_file:
+            csv_data = csv.reader(info_file, delimiter=',')
+            embedding = None
+            for frame_number, row in enumerate(csv_data):
+                image_path = row[0].replace('\\', '/')
+                face_center_x = int(row[2])
+                face_center_y = int(row[3])
+                bounding_box_dimensions_x = int(row[4])
+                bounding_box_dimensions_y = int(row[5])
+                image_path = os.path.join(video_directory, image_path)
+                image = Image.open(image_path)
+                upper_left_corner_x = (face_center_x -
+                                       bounding_box_dimensions_x/2)
+                upper_left_corner_y = (face_center_y -
+                                       bounding_box_dimensions_y/2)
+                image.crop((upper_left_corner_x,
+                            upper_left_corner_y,
+                            bounding_box_dimensions_x,
+                            bounding_box_dimensions_y))
+
+                cropped = np.array(image)
+                cropped = np.expand_dims(cropped, 0)
+                if embedding is None:
+                    embedding = embedder.embed(cropped)
+                    c.execute('INSERT INTO videos (id, embedding) values' +
+                              '  (?, ?)',
+                              (person_number, embedding))
+
+                pose = pose_estimator.estimate_pose(cropped)
+                c.execute('INSERT INTO frames (video_id, image_path, pose)' +
+                          ' values (?, ?, ?)',
+                          (frame_number, image_path, pose))
+                print(person_number)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 4:
+        sys.exit('Requires a data directory, an embedder weights file,' +
+                 'and a pose estimator weights file')
+
+    video_directory = sys.argv[1]
+    facenet_protobuf = sys.argv[2]
+    pose_weights = sys.argv[3]
 
     embedder = Embedder(facenet_protobuf)
     pose_estimator = PoseEstimator(pose_weights)
@@ -49,26 +98,13 @@ if __name__ == '__main__':
              embedding array)''')
     c.execute('''CREATE TABLE frames
             (video_id INTEGER,
+             image_path STRING,
              pose array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
+    populate_database(video_directory, embedder, pose_estimator, c, 50)
     batch_size = 10
-    # Replace when we have actual data
-    dummy_images = np.random.rand(27, 200, 200, 3)
-    batched_images = [dummy_images[i:i+batch_size]
-                      for i in range(0, len(dummy_images), batch_size)]
 
-    for video_number, batch in enumerate(batched_images):
-        embedding, frame_tuples = process_video(batch,
-                                                embedder,
-                                                pose_estimator)
-
-        c.execute('INSERT INTO videos (id, embedding) values (?, ?)',
-                  (video_number, np.random.rand(128),))
-        for frame, pose in frame_tuples:
-            c.execute('INSERT INTO frames (video_id, pose) values (?, ?)',
-                      (video_number, pose))
-
-    c.execute('SELECT pose FROM frames WHERE video_id=0')
+    c.execute('SELECT * FROM frames')
     data = c.fetchall()
     print(data)

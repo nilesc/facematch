@@ -25,6 +25,10 @@ class PoseEstimator:
 
         # Move channels to be in pytorch format
         input_image = input_image.permute(0, 3, 1, 2)
+        input_image = input_image.type('torch.FloatTensor')
+
+        # Change dimensions to correct size
+        input_image = F.interpolate(input_image, size=(300, 300))
 
         yaw, pitch, roll = self.model(input_image.float())
         yaw = F.softmax(yaw, dim=1)
