@@ -27,11 +27,11 @@ def populate_database(video_directory,
                       embedder,
                       pose_estimator,
                       cursor,
-                      num_videos=None):
+                      num_people=None):
     folders = [f for f in os.listdir(video_directory)
                if os.path.isdir(os.path.join(video_directory, f))]
-    for number, folder in enumerate(folders):
-        if not number < num_videos:
+    for person_number, folder in enumerate(folders):
+        if person_number == num_people:
             return
 
         frame_info = os.path.join(video_directory,
@@ -40,7 +40,7 @@ def populate_database(video_directory,
         with open(frame_info) as info_file:
             csv_data = csv.reader(info_file, delimiter=',')
             embedding = None
-            for i, row in enumerate(csv_data):
+            for frame_number, row in enumerate(csv_data):
                 image_path = row[0].replace('\\', '/')
                 face_center_x = int(row[2])
                 face_center_y = int(row[3])
@@ -55,18 +55,18 @@ def populate_database(video_directory,
                             bounding_box_dimensions_x,
                             bounding_box_dimensions_y))
 
-                cropped = np.array(image).shape
-                if i == 0:
+                cropped = np.array(image)
+                cropped = np.expand_dims(cropped, 0)
+                if embedding is None:
                     embedding = embedder.embed(cropped)
                     c.execute('INSERT INTO videos (id, embedding) values (?, ?)',
-                              (number, embedding))
+                              (person_number, embedding))
 
                 pose = pose_estimator.estimate_pose(cropped)
                 c.execute('INSERT INTO frames (video_id, image_path, pose)' + \
                           ' values (?, ?, ?)',
-                          (number, image_path, pose))
-
-
+                          (frame_number, image_path, pose))
+                print('.')
 
 
 if __name__ == '__main__':
@@ -101,22 +101,7 @@ if __name__ == '__main__':
 
     populate_database(video_directory, embedder, pose_estimator, c, 50)
     batch_size = 10
-    # Replace when we have actual data
-    dummy_images = np.random.rand(27, 200, 200, 3)
-    batched_images = [dummy_images[i:i+batch_size]
-                      for i in range(0, len(dummy_images), batch_size)]
 
-    for video_number, batch in enumerate(batched_images):
-        embedding, frame_tuples = process_video(batch,
-                                                embedder,
-                                                pose_estimator)
-
-        c.execute('INSERT INTO videos (id, embedding) values (?, ?)',
-                  (video_number, np.random.rand(128),))
-        for frame, pose in frame_tuples:
-            c.execute('INSERT INTO frames (video_id, pose) values (?, ?)',
-                      (video_number, pose))
-
-    c.execute('SELECT pose FROM frames WHERE video_id=0')
+    c.execute('SELECT * FROM frames')
     data = c.fetchall()
     print(data)
