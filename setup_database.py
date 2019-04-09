@@ -4,14 +4,10 @@ import csv
 import sys
 import sqlite3
 import numpy as np
+from PIL import Image
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
 
-
-def process_video(video, embedder, pose_estimator):
-    embedding = embedder.embed(np.expand_dims(video[0], 0))
-    poses = pose_estimator.estimate_pose(video)
-    return (embedding, [(video[i], poses[i]) for i in range(len(video))])
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
 def adapt_array(arr):
@@ -43,8 +39,34 @@ def populate_database(video_directory,
 
         with open(frame_info) as info_file:
             csv_data = csv.reader(info_file, delimiter=',')
-            for row in csv_data:
-                print(row)
+            embedding = None
+            for i, row in enumerate(csv_data):
+                image_path = row[0].replace('\\', '/')
+                face_center_x = int(row[2])
+                face_center_y = int(row[3])
+                bounding_box_dimensions_x = int(row[4])
+                bounding_box_dimensions_y = int(row[5])
+                image_path = os.path.join(video_directory, image_path)
+                image = Image.open(image_path)
+                upper_left_corner_x = face_center_x - bounding_box_dimensions_y/2
+                upper_left_corner_y = face_center_y - bounding_box_dimensions_y/2
+                image.crop((upper_left_corner_x,
+                            upper_left_corner_y,
+                            bounding_box_dimensions_x,
+                            bounding_box_dimensions_y))
+
+                cropped = np.array(image).shape
+                if i == 0:
+                    embedding = embedder.embed(cropped)
+                    c.execute('INSERT INTO videos (id, embedding) values (?, ?)',
+                              (number, embedding))
+
+                pose = pose_estimator.estimate_pose(cropped)
+                c.execute('INSERT INTO frames (video_id, image_path, pose)' + \
+                          ' values (?, ?, ?)',
+                          (number, image_path, pose))
+
+
 
 
 if __name__ == '__main__':
@@ -73,6 +95,7 @@ if __name__ == '__main__':
              embedding array)''')
     c.execute('''CREATE TABLE frames
             (video_id INTEGER,
+             image_path STRING,
              pose array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
