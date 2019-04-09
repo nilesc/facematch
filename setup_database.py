@@ -48,8 +48,10 @@ def populate_database(video_directory,
                 bounding_box_dimensions_y = int(row[5])
                 image_path = os.path.join(video_directory, image_path)
                 image = Image.open(image_path)
-                upper_left_corner_x = face_center_x - bounding_box_dimensions_y/2
-                upper_left_corner_y = face_center_y - bounding_box_dimensions_y/2
+                upper_left_corner_x = (face_center_x -
+                                       bounding_box_dimensions_x/2)
+                upper_left_corner_y = (face_center_y -
+                                       bounding_box_dimensions_y/2)
                 image.crop((upper_left_corner_x,
                             upper_left_corner_y,
                             bounding_box_dimensions_x,
@@ -59,19 +61,20 @@ def populate_database(video_directory,
                 cropped = np.expand_dims(cropped, 0)
                 if embedding is None:
                     embedding = embedder.embed(cropped)
-                    c.execute('INSERT INTO videos (id, embedding) values (?, ?)',
+                    c.execute('INSERT INTO videos (id, embedding) values' +
+                              '  (?, ?)',
                               (person_number, embedding))
 
                 pose = pose_estimator.estimate_pose(cropped)
-                c.execute('INSERT INTO frames (video_id, image_path, pose)' + \
+                c.execute('INSERT INTO frames (video_id, image_path, pose)' +
                           ' values (?, ?, ?)',
                           (frame_number, image_path, pose))
-                print('.')
+                print(person_number)
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        sys.exit('Requires a data directory, an embedder weights file,' + \
+        sys.exit('Requires a data directory, an embedder weights file,' +
                  'and a pose estimator weights file')
 
     video_directory = sys.argv[1]
