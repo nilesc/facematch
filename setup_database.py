@@ -96,21 +96,20 @@ if __name__ == '__main__':
     conn = sqlite3.connect(database_file, detect_types=sqlite3.PARSE_DECLTYPES)
 
     c = conn.cursor()
-    c.execute('DROP TABLE IF EXISTS videos')
-    c.execute('DROP TABLE IF EXISTS frames')
 
-    c.execute('''CREATE TABLE videos
+    c.execute('''CREATE TABLE IF NOT EXISTS videos
             (id INTEGER PRIMARY KEY,
              embedding array)''')
-    c.execute('''CREATE TABLE frames
+    c.execute('''CREATE TABLE IF NOT EXISTS frames
             (video_id INTEGER,
              image_path STRING,
              pose array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
-    populate_database(video_directory, embedder, pose_estimator, c, 50)
+    populate_database(video_directory, embedder, pose_estimator, c, 3)
     batch_size = 10
 
     c.execute('SELECT * FROM frames')
     data = c.fetchall()
+    conn.commit()
     print(data)
