@@ -31,16 +31,20 @@ if __name__ == '__main__':
     embedder = Embedder(facenet_protobuf)
     pose_estimator = PoseEstimator(pose_weights)
 
+    input_image = np.random.rand(1, 160, 160, 3)
+    input_embedding = embedder.embed(input_image)
+    input_pose = pose_estimator.estimate_pose(input_image)
+
     c = conn.cursor()
     c.execute('SELECT embedding FROM videos')
     embeddings = c.fetchall()
     embeddings = np.array(embeddings)
-    input_embedding = np.random.rand(1, 128)
     num_people = 5
     candidates = find_n_closest(embeddings, input_embedding, num_people)
 
-    query = f"SELECT * FROM frames WHERE video_id IN {str(tuple(candidates))}"
+    query = f"SELECT image_path, pose FROM frames WHERE video_id IN {str(tuple(candidates))}"
 
     c.execute(query)
-    frames = c.fetchall()
-    print(frames)
+    paths, poses = zip(*c.fetchall())
+    best_frame_index = find_n_closest(np.array(poses), input_pose, 1)
+    print(paths[best_frame_index[0]])
