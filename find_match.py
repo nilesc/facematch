@@ -26,7 +26,8 @@ def get_best_match(conn, embedder, pose_estimator, image):
     num_people = 5
     candidates = find_n_closest(embeddings, input_embedding, num_people)
 
-    query = f"SELECT image_path, pose FROM frames WHERE video_id IN {str(tuple(candidates))}"
+    query = "SELECT image_path, pose FROM frames WHERE video_id IN " + \
+            str(tuple(candidates))
 
     c.execute(query)
     paths, poses = zip(*c.fetchall())

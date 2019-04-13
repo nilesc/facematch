@@ -62,7 +62,7 @@ def populate_database(video_directory,
                 if embedding is None:
                     image_dimension = 160
                     embedding_image = image.resize((image_dimension,
-                                                      image_dimension))
+                                                    image_dimension))
                     embedding_image = np.array(embedding_image)
                     embedding_image = np.expand_dims(embedding_image, 0)
                     embedding = embedder.embed(embedding_image)
