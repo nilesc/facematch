@@ -6,6 +6,15 @@ from face_embed import Embedder
 from pose_estimator import PoseEstimator
 
 
+def find_n_closest(options, target, n):
+    options = options.reshape(options.shape[0], -1)
+    repeated_target = np.repeat(target, options.shape[0], 0)
+    difference = options - repeated_target
+    norms = np.linalg.norm(difference, axis=1)
+    closest = np.argpartition(norms, 1)
+    return closest[-n:]
+
+
 if __name__ == '__main__':
     if len(sys.argv) != 4:
         sys.exit('Requires a database, an embedder weights file,' +
@@ -26,14 +35,9 @@ if __name__ == '__main__':
     c.execute('SELECT embedding FROM videos')
     embeddings = c.fetchall()
     embeddings = np.array(embeddings)
-    embeddings = embeddings.reshape(embeddings.shape[0], embeddings.shape[2])
     input_embedding = np.random.rand(1, 128)
-    input_repeated = np.repeat(input_embedding, embeddings.shape[0], 0)
-    difference = embeddings - input_repeated
-    norms = np.linalg.norm(difference, axis=1)
-    closest_indices = np.argpartition(norms, 0)
-    num_closest = 5
-    candidates = closest_indices[-num_closest:]
+    num_people = 5
+    candidates = find_n_closest(embeddings, input_embedding, num_people)
 
     query = f"SELECT * FROM frames WHERE video_id IN {str(tuple(candidates))}"
 
