@@ -58,14 +58,20 @@ def populate_database(video_directory,
                             bounding_box_dimensions_y))
 
                 cropped = np.array(image)
-                cropped = np.expand_dims(cropped, 0)
+                pose_image = np.expand_dims(cropped, 0)
                 if embedding is None:
-                    embedding = embedder.embed(cropped)
+                    image_dimension = 160
+                    embedding_image = image.resize((image_dimension,
+                                                    image_dimension))
+                    embedding_image = np.array(embedding_image)
+                    embedding_image = np.expand_dims(embedding_image, 0)
+                    embedding = embedder.embed(embedding_image)
+                    embedding = embedding.flatten()
                     c.execute('INSERT INTO videos (id, embedding) values' +
                               '  (?, ?)',
                               (person_number, embedding))
 
-                pose = pose_estimator.estimate_pose(cropped)
+                pose = pose_estimator.estimate_pose(pose_image)
                 c.execute('INSERT INTO frames (video_id, image_path, pose)' +
                           ' values (?, ?, ?)',
                           (frame_number, image_path, pose))
@@ -90,21 +96,20 @@ if __name__ == '__main__':
     conn = sqlite3.connect(database_file, detect_types=sqlite3.PARSE_DECLTYPES)
 
     c = conn.cursor()
-    c.execute('DROP TABLE IF EXISTS videos')
-    c.execute('DROP TABLE IF EXISTS frames')
 
-    c.execute('''CREATE TABLE videos
+    c.execute('''CREATE TABLE IF NOT EXISTS videos
             (id INTEGER PRIMARY KEY,
              embedding array)''')
-    c.execute('''CREATE TABLE frames
+    c.execute('''CREATE TABLE IF NOT EXISTS frames
             (video_id INTEGER,
              image_path STRING,
              pose array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
-    populate_database(video_directory, embedder, pose_estimator, c, 50)
+    populate_database(video_directory, embedder, pose_estimator, c, 3)
     batch_size = 10
 
     c.execute('SELECT * FROM frames')
     data = c.fetchall()
+    conn.commit()
     print(data)
