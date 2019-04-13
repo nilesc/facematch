@@ -15,6 +15,25 @@ def find_n_closest(options, target, n):
     return closest[-n:]
 
 
+def get_best_match(conn, embedder, pose_estimator, image):
+    input_embedding = embedder.embed(input_image)
+    input_pose = pose_estimator.estimate_pose(input_image)
+
+    c = conn.cursor()
+    c.execute('SELECT embedding FROM videos')
+    embeddings = c.fetchall()
+    embeddings = np.array(embeddings)
+    num_people = 5
+    candidates = find_n_closest(embeddings, input_embedding, num_people)
+
+    query = f"SELECT image_path, pose FROM frames WHERE video_id IN {str(tuple(candidates))}"
+
+    c.execute(query)
+    paths, poses = zip(*c.fetchall())
+    best_frame_index = find_n_closest(np.array(poses), input_pose, 1)
+    return paths[best_frame_index[0]]
+
+
 if __name__ == '__main__':
     if len(sys.argv) != 4:
         sys.exit('Requires a database, an embedder weights file,' +
@@ -32,19 +51,5 @@ if __name__ == '__main__':
     pose_estimator = PoseEstimator(pose_weights)
 
     input_image = np.random.rand(1, 160, 160, 3)
-    input_embedding = embedder.embed(input_image)
-    input_pose = pose_estimator.estimate_pose(input_image)
 
-    c = conn.cursor()
-    c.execute('SELECT embedding FROM videos')
-    embeddings = c.fetchall()
-    embeddings = np.array(embeddings)
-    num_people = 5
-    candidates = find_n_closest(embeddings, input_embedding, num_people)
-
-    query = f"SELECT image_path, pose FROM frames WHERE video_id IN {str(tuple(candidates))}"
-
-    c.execute(query)
-    paths, poses = zip(*c.fetchall())
-    best_frame_index = find_n_closest(np.array(poses), input_pose, 1)
-    print(paths[best_frame_index[0]])
+    print(get_best_match(conn, embedder, pose_estimator, input_image))
