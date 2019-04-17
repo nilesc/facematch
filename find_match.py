@@ -14,7 +14,7 @@ def find_n_closest(options, target, n):
     norms = np.linalg.norm(difference, axis=1)
     closest = np.argpartition(norms, 1)
     print("closest", closest)
-    return closest[-n:]
+    return closest[:n]
 
 
 def get_best_match(conn, embedder, pose_estimator, image):
