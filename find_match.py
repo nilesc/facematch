@@ -13,8 +13,27 @@ def find_n_closest(options, target, n):
     difference = options - repeated_target
     norms = np.linalg.norm(difference, axis=1)
     closest = np.argpartition(norms, 1)
-    print("closest", closest)
     return closest[:n]
+
+
+# Math based on code from:
+# https://stackoverflow.com/questions/2827393/
+# angles-between-two-n-dimensional-vectors-in-python/13849249#13849249
+def find_smallest_angle_difference(options, target):
+    # Conver target to a unit vector
+    target = target / np.linalg.norm(target)
+
+    # Change options into unit vectors
+    options = options.reshape(options.shape[0], -1)
+    lengths = np.linalg.norm(options, axis=1)
+    lengths = np.reshape(lengths, (-1, 1))
+    lengths = np.repeat(lengths, 3, 1)
+    options = options / lengths
+
+    dots = np.tensordot(options, target, axes=([1], [1]))
+    clipped = np.clip(dots, -1.0, 1.0)
+    differences = np.arccos(clipped)
+    return np.argmin(differences)
 
 
 def get_best_match(conn, embedder, pose_estimator, image):
@@ -27,15 +46,15 @@ def get_best_match(conn, embedder, pose_estimator, image):
     embeddings = np.array(embeddings)
     num_people = 5
     candidates = find_n_closest(embeddings, input_embedding, num_people)
-    print("Candidates:", candidates)
 
     query = "SELECT image_path, pose FROM frames WHERE video_id IN " + \
             str(tuple(candidates))
 
     c.execute(query)
     paths, poses = zip(*c.fetchall())
-    best_frame_index = find_n_closest(np.array(poses), input_pose, 1)
-    return paths[best_frame_index[0]]
+    best_frame_index = find_smallest_angle_difference(np.array(poses),
+                                                      input_pose)
+    return paths[best_frame_index]
 
 
 if __name__ == '__main__':
@@ -63,11 +82,10 @@ if __name__ == '__main__':
     embedding_image = np.array(embedding_image)
     embedding_image = np.expand_dims(embedding_image, 0)
     image_array = np.array(embedding_image)
-    #input_image = np.random.rand(1, 160, 160, 3)
+
     if len(image_array.shape) != 4:
         print("image less than 4d")
         image_array = image_array.reshape(1, image_array.shape[0], image_array.shape[1], image_array.shape[2])
-    print("shape:", image_array.shape)
     input_image = image_array
 
     print(get_best_match(conn, embedder, pose_estimator, image_array))
