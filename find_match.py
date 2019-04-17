@@ -82,7 +82,6 @@ if __name__ == '__main__':
     embedding_image = np.expand_dims(embedding_image, 0)
     image_array = np.array(embedding_image)
 
-    #input_image = np.random.rand(1, 160, 160, 3)
     if len(image_array.shape) != 4:
         print("image less than 4d")
         image_array = image_array.reshape(1, image_array.shape[0], image_array.shape[1], image_array.shape[2])
