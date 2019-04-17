@@ -54,6 +54,9 @@ if __name__ == '__main__':
 
     embedder = Embedder(facenet_protobuf)
     pose_estimator = PoseEstimator(pose_weights)
+
+    # changes made starting here
+    # can now input a real image instead of a random one
     input_image = Image.open(input_image_path)
     image_dimension = 160
     embedding_image = input_image.resize((image_dimension, image_dimension))

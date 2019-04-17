@@ -87,6 +87,8 @@ if __name__ == '__main__':
     facenet_protobuf = sys.argv[2]
     pose_weights = sys.argv[3]
 
+    print(video_directory, facenet_protobuf, pose_weights)
+
     embedder = Embedder(facenet_protobuf)
     pose_estimator = PoseEstimator(pose_weights)
 
@@ -106,7 +108,8 @@ if __name__ == '__main__':
              pose array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
-    populate_database(video_directory, embedder, pose_estimator, c, 3)
+    # changed from 3 to 2
+    populate_database(video_directory, embedder, pose_estimator, c, 2)
     batch_size = 10
 
     c.execute('SELECT * FROM frames')
