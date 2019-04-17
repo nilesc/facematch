@@ -16,19 +16,15 @@
 		<div class="row">
 			<p>Up to 10 pictures may show up. Please select Yes if you believe that the image looks similar to the one that you submitted. Else, select No.</p>
 		</div>
+		<div class="row">
+			<img src="{{file_returned}}"></img>
+		</div>
 		<div class = "row">
 			<div>
-				<input id="id1" type="number" min="100" max="300" required>
-				<button onclick="myFunction()">OK</button>
-				<p id="demo"></p>
-				<script>
-					function myFunction() {
-					var inpObj = document.getElementById("id1");
-					if (inpObj.checkValidity() == false) {
-						document.getElementById("demo").innerHTML = inpObj.validationMessage;
-					}
-				}
-				</script>
+				<select name="cars">
+					<option value="Yes">Yes</option>
+					<option value="No">No</option>
+				</select>
 			</div>
 		</div>
 		
