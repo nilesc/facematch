@@ -52,7 +52,8 @@ def get_best_match(conn, embedder, pose_estimator, image):
 
     c.execute(query)
     paths, poses = zip(*c.fetchall())
-    best_frame_index = find_smallest_angle_difference(np.array(poses), input_pose)
+    best_frame_index = find_smallest_angle_difference(np.array(poses),
+                                                      input_pose)
     return paths[best_frame_index]
 
 
