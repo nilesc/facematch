@@ -48,14 +48,13 @@ def populate_database(video_directory,
                 bounding_box_dimensions_y = int(row[5])
                 image_path = os.path.join(video_directory, image_path)
                 image = Image.open(image_path)
-                upper_left_corner_x = (face_center_x -
-                                       bounding_box_dimensions_x/2)
-                upper_left_corner_y = (face_center_y -
-                                       bounding_box_dimensions_y/2)
-                image.crop((upper_left_corner_x,
-                            upper_left_corner_y,
-                            bounding_box_dimensions_x,
-                            bounding_box_dimensions_y))
+
+                left = face_center_x - bounding_box_dimensions_x/2
+                right = face_center_x + bounding_box_dimensions_x/2
+                top = face_center_y - bounding_box_dimensions_y/2
+                bottom = face_center_y + bounding_box_dimensions_y/2
+
+                image = image.crop((left, top, right, bottom))
 
                 cropped = np.array(image)
                 pose_image = np.expand_dims(cropped, 0)
