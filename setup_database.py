@@ -61,10 +61,20 @@ def populate_database(video_directory,
                 pose_image = np.expand_dims(cropped, 0)
                 if embedding is None:
                     image_dimension = 160
-                    embedding_image = image.resize((image_dimension,
-                                                    image_dimension))
-                    embedding_image = np.array(embedding_image)
-                    embedding_image = np.expand_dims(embedding_image, 0)
+                    print(pose_image.shape)
+                    x_pad = (0, 0)
+                    if pose_image.shape[1] < image_dimension:
+                        difference = image_dimension - pose_image.shape[1]
+                        split = math.ceil(difference / 2.0)
+                        x_pad = (split, split)
+
+                    y_pad = (0, 0)
+                    if pose_image.shape[2] < image_dimension:
+                        difference = image_dimension - pose_image.shape[2]
+                        split = math.ceil(difference / 2.0)
+                        y_pad = (split, split)
+                    embedding_image = np.pad(pose_image, ((0, 0), x_pad, y_pad, (0, 0)), 'constant')
+                    print(embedding_image.shape)
                     embedding = embedder.embed(embedding_image)
                     embedding = embedding.flatten()
                     c.execute('INSERT INTO videos (id, embedding) values' +
