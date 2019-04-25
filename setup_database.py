@@ -2,6 +2,7 @@ import io
 import os
 import csv
 import sys
+import math
 import sqlite3
 import numpy as np
 from PIL import Image
@@ -60,20 +61,22 @@ def populate_database(video_directory,
                 pose_image = np.expand_dims(cropped, 0)
                 if embedding is None:
                     image_dimension = 160
-                    print(pose_image.shape)
+                    downscale_factor = image_dimension / max(bounding_box_dimensions_x, bounding_box_dimensions_y)
+                    image = image.resize((int(bounding_box_dimensions_x * downscale_factor),
+                                          int(bounding_box_dimensions_y * downscale_factor)))
+                    embedding_image = np.array(image)
                     x_pad = (0, 0)
-                    if pose_image.shape[1] < image_dimension:
-                        difference = image_dimension - pose_image.shape[1]
+                    if embedding_image.shape[1] < image_dimension:
+                        difference = image_dimension - embedding_image.shape[1]
                         split = math.ceil(difference / 2.0)
                         x_pad = (split, split)
 
                     y_pad = (0, 0)
-                    if pose_image.shape[2] < image_dimension:
-                        difference = image_dimension - pose_image.shape[2]
+                    if embedding_image.shape[2] < image_dimension:
+                        difference = image_dimension - embedding_image.shape[2]
                         split = math.ceil(difference / 2.0)
                         y_pad = (split, split)
                     embedding_image = np.pad(pose_image, ((0, 0), x_pad, y_pad, (0, 0)), 'constant')
-                    print(embedding_image.shape)
                     embedding = embedder.embed(embedding_image)
                     embedding = embedding.flatten()
                     c.execute('INSERT INTO videos (id, embedding) values' +

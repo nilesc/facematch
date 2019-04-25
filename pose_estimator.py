@@ -30,20 +30,23 @@ class PoseEstimator:
 
         print(f'Input shape: {input_image.shape}')
         # Change dimensions to correct size
-        # Increase dimensions
         desired_dim = 300
+
+        # Interpolate to reduce dimensions
+        scale_factor = desired_dim / max(input_image.shape[2], input_image.shape[3])
+        print(scale_factor)
+        input_image = F.interpolate(input_image,
+                                    size=(int(input_image.shape[2] * scale_factor),
+                                          int(input_image.shape[3] * scale_factor)))
+        print(f'Interpolated: {input_image.shape}')
+
+        # Increase dimensions
         pad_y = max(desired_dim - input_image.shape[2], 0)
         pad_x = max(desired_dim - input_image.shape[3], 0)
         pad_y = math.ceil(pad_y/2)
         pad_x = math.ceil(pad_x/2)
         input_image = torch.nn.ConstantPad2d((pad_x, pad_x, pad_y, pad_y), 0)(input_image)
         print(f'Padded: {input_image.shape}')
-
-        # Interpolate to reduce dimensions
-        input_image = F.interpolate(input_image,
-                                    size=(desired_dim, desired_dim))
-        print(f'Interpolated: {input_image.shape}')
-
 
         yaw, pitch, roll = self.model(input_image.float())
         yaw = F.softmax(yaw, dim=1)
