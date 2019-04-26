@@ -2,6 +2,7 @@ import io
 import os
 import csv
 import sys
+import math
 import sqlite3
 import numpy as np
 from PIL import Image
@@ -48,23 +49,34 @@ def populate_database(video_directory,
                 bounding_box_dimensions_y = int(row[5])
                 image_path = os.path.join(video_directory, image_path)
                 image = Image.open(image_path)
-                upper_left_corner_x = (face_center_x -
-                                       bounding_box_dimensions_x/2)
-                upper_left_corner_y = (face_center_y -
-                                       bounding_box_dimensions_y/2)
-                image.crop((upper_left_corner_x,
-                            upper_left_corner_y,
-                            bounding_box_dimensions_x,
-                            bounding_box_dimensions_y))
+
+                left = face_center_x - bounding_box_dimensions_x/2
+                right = face_center_x + bounding_box_dimensions_x/2
+                top = face_center_y - bounding_box_dimensions_y/2
+                bottom = face_center_y + bounding_box_dimensions_y/2
+
+                image = image.crop((left, top, right, bottom))
 
                 cropped = np.array(image)
                 pose_image = np.expand_dims(cropped, 0)
                 if embedding is None:
                     image_dimension = 160
-                    embedding_image = image.resize((image_dimension,
-                                                    image_dimension))
-                    embedding_image = np.array(embedding_image)
-                    embedding_image = np.expand_dims(embedding_image, 0)
+                    downscale_factor = image_dimension / max(bounding_box_dimensions_x, bounding_box_dimensions_y)
+                    image = image.resize((int(bounding_box_dimensions_x * downscale_factor),
+                                          int(bounding_box_dimensions_y * downscale_factor)))
+                    embedding_image = np.array(image)
+                    x_pad = (0, 0)
+                    if embedding_image.shape[1] < image_dimension:
+                        difference = image_dimension - embedding_image.shape[1]
+                        split = math.ceil(difference / 2.0)
+                        x_pad = (split, split)
+
+                    y_pad = (0, 0)
+                    if embedding_image.shape[2] < image_dimension:
+                        difference = image_dimension - embedding_image.shape[2]
+                        split = math.ceil(difference / 2.0)
+                        y_pad = (split, split)
+                    embedding_image = np.pad(pose_image, ((0, 0), x_pad, y_pad, (0, 0)), 'constant')
                     embedding = embedder.embed(embedding_image)
                     embedding = embedding.flatten()
                     c.execute('INSERT INTO videos (id, embedding) values' +

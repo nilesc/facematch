@@ -1,4 +1,5 @@
 # Uses a model found here: https://github.com/natanielruiz/deep-head-pose
+import math
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -27,8 +28,25 @@ class PoseEstimator:
         input_image = input_image.permute(0, 3, 1, 2)
         input_image = input_image.type('torch.FloatTensor')
 
+        print(f'Input shape: {input_image.shape}')
         # Change dimensions to correct size
-        input_image = F.interpolate(input_image, size=(300, 300))
+        desired_dim = 300
+
+        # Interpolate to reduce dimensions
+        scale_factor = desired_dim / max(input_image.shape[2], input_image.shape[3])
+        print(scale_factor)
+        input_image = F.interpolate(input_image,
+                                    size=(int(input_image.shape[2] * scale_factor),
+                                          int(input_image.shape[3] * scale_factor)))
+        print(f'Interpolated: {input_image.shape}')
+
+        # Increase dimensions
+        pad_y = max(desired_dim - input_image.shape[2], 0)
+        pad_x = max(desired_dim - input_image.shape[3], 0)
+        pad_y = math.ceil(pad_y/2)
+        pad_x = math.ceil(pad_x/2)
+        input_image = torch.nn.ConstantPad2d((pad_x, pad_x, pad_y, pad_y), 0)(input_image)
+        print(f'Padded: {input_image.shape}')
 
         yaw, pitch, roll = self.model(input_image.float())
         yaw = F.softmax(yaw, dim=1)
