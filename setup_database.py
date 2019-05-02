@@ -55,14 +55,12 @@ def populate_database(video_directory,
                 top = face_center_y - bounding_box_dimensions_y/2
                 bottom = face_center_y + bounding_box_dimensions_y/2
 
-                image = image.crop((left, top, right, bottom))
+                pose_image = image.crop((left, top, right, bottom))
 
-                cropped = np.array(image)
-                pose_image = np.expand_dims(cropped, 0)
                 if embedding is None:
                     image_dimension = 160
                     downscale_factor = image_dimension / max(bounding_box_dimensions_x, bounding_box_dimensions_y)
-                    image = image.resize((int(bounding_box_dimensions_x * downscale_factor),
+                    embedding_image = image.copy().resize((int(bounding_box_dimensions_x * downscale_factor),
                                           int(bounding_box_dimensions_y * downscale_factor)))
                     embedding_image = np.array(image)
                     embedding_image = np.expand_dims(image, 0)
@@ -122,7 +120,7 @@ if __name__ == '__main__':
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
     # changed from 3 to 2
-    populate_database(video_directory, embedder, pose_estimator, c, 50)
+    populate_database(video_directory, embedder, pose_estimator, c, 10)
     batch_size = 10
 
     c.execute('SELECT * FROM frames')
