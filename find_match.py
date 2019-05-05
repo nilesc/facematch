@@ -78,7 +78,9 @@ if __name__ == '__main__':
     pose_estimator = PoseEstimator(pose_weights)
 
     input_image = Image.open(input_image_path)
-    input_image_bounds = list(face_recognition.api.face_locations(np.array(input_image))[0])
+    as_array = np.array(input_image)
+    possible_bounds = face_recognition.api.face_locations(as_array)
+    input_image_bounds = list(possible_bounds[0])
     rotated = input_image_bounds[-1:] + input_image_bounds[:-1]
     input_image = input_image.crop(rotated)
     embedding_image = resize_image(input_image, 160)
