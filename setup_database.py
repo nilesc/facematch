@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
+from helpers import resize_image
 
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
@@ -58,24 +59,7 @@ def populate_database(video_directory,
                 pose_image = image.crop((left, top, right, bottom))
 
                 if embedding is None:
-                    image_dimension = 160
-                    downscale_factor = image_dimension / max(bounding_box_dimensions_x, bounding_box_dimensions_y)
-                    embedding_image = image.copy().resize((int(bounding_box_dimensions_x * downscale_factor),
-                                          int(bounding_box_dimensions_y * downscale_factor)))
-                    embedding_image = np.array(embedding_image)
-                    embedding_image = np.expand_dims(embedding_image, 0)
-                    x_pad = (0, 0)
-                    if embedding_image.shape[1] < image_dimension:
-                        difference = image_dimension - embedding_image.shape[1]
-                        split = math.ceil(difference / 2.0)
-                        x_pad = (split, split)
-
-                    y_pad = (0, 0)
-                    if embedding_image.shape[2] < image_dimension:
-                        difference = image_dimension - embedding_image.shape[2]
-                        split = math.ceil(difference / 2.0)
-                        y_pad = (split, split)
-                    embedding_image = np.pad(embedding_image, ((0, 0), x_pad, y_pad, (0, 0)), 'constant')
+                    embedding_image = resize_image(image, 160)
                     embedding = embedder.embed(embedding_image)
                     embedding = embedding.flatten()
                     c.execute('INSERT INTO videos (id, embedding) values' +
