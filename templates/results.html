@@ -16,15 +16,23 @@
 		<div class="row">
 			<p>Up to 10 pictures may show up. Please select Yes if you believe that the image looks similar to the one that you submitted. Else, select No.</p>
 		</div>
-		<div class="row">
-			<img src="{{file_returned}}"></img>
-		</div>
+		{% for key, value in result.items() %}
+			<div class="row">
+				<img src="{{value}}" height=200></img>
+			</div>
+		{% endfor %}
+		<br>
+		<br>
+		<br>
 		<div class = "row">
 			<div>
-				<select name="cars">
-					<option value="Yes">Yes</option>
-					<option value="No">No</option>
+				<select name="pick">
+					<option value="1">1</option>
+					<option value="2">2</option>
+					<option value="3">3</option>
+					<option value="4">4</option>
 				</select>
+				<input type="submit" value="Submit">
 			</div>
 		</div>
 		

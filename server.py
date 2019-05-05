@@ -61,18 +61,21 @@ def res():
 		proc = subprocess.Popen(['python3', 'find_match.py',  'video_database.db', '20170512-110547/20170512-110547.pb', 'hopenet_robust_alpha1.pkl', UPLOADED_FILE], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		out = proc.communicate()[0]
 		out = out.decode('ascii')
+		print('-----------------------------------')
 		out = out.split('\n')
-		file_returned = out[1]
-		print(file_returned)
-		f_name = file_returned.split('/')[-1]
-		print("FILENAME:", f_name)
-		cmd = "cp " + file_returned + " static/" + f_name
-		print(cmd)
-		os.system(cmd)
-		file_returned = 'static/' + f_name
+		res = {}
+		for x in range(5,9):
+			file_returned = out[x]
+			f_name = file_returned.split('/')[-1]
+			res['file_returned_' + str(x)] = "static/" + f_name
+			print(file_returned, f_name)
+
+			cmd = "cp " + file_returned + " static/" + f_name
+			print(cmd)
+			os.system(cmd)
 
 		
-	return render_template("results.html", file_returned=file_returned)
+	return render_template("results.html", result=res)
 
 @app.route('/results-final.html')
 def res_final():
@@ -80,16 +83,17 @@ def res_final():
 		proc = subprocess.Popen(['python3', 'find_match.py',  'video_database.db', '20170512-110547/20170512-110547.pb', 'hopenet_robust_alpha1.pkl', UPLOADED_FILE], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		out = proc.communicate()[0]
 		out = out.decode('ascii')
+		print(out)
 		out = out.split('\n')
 		file_returned = out[1]
-		print(file_returned)
-		f_name = file_returned.split('/')[-1]
-		print("FILENAME:", f_name)
+		f_name = file_returned_1.split('/')[-1]
+
 		cmd = "cp " + file_returned + " static/" + f_name
 		print(cmd)
 		os.system(cmd)
+
 		file_returned = 'static/' + f_name
-	
+
 	return render_template("results-final.html", file_returned=file_returned)
 
 @app.route('/handle_data.html', methods=['POST'])
