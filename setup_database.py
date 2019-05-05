@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
+from helpers import resize_image
 
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
@@ -55,29 +56,10 @@ def populate_database(video_directory,
                 top = face_center_y - bounding_box_dimensions_y/2
                 bottom = face_center_y + bounding_box_dimensions_y/2
 
-                image = image.crop((left, top, right, bottom))
+                pose_image = image.crop((left, top, right, bottom))
 
-                cropped = np.array(image)
-                pose_image = np.expand_dims(cropped, 0)
                 if embedding is None:
-                    image_dimension = 160
-                    downscale_factor = image_dimension / max(bounding_box_dimensions_x, bounding_box_dimensions_y)
-                    image = image.resize((int(bounding_box_dimensions_x * downscale_factor),
-                                          int(bounding_box_dimensions_y * downscale_factor)))
-                    embedding_image = np.array(image)
-                    embedding_image = np.expand_dims(image, 0)
-                    x_pad = (0, 0)
-                    if embedding_image.shape[1] < image_dimension:
-                        difference = image_dimension - embedding_image.shape[1]
-                        split = math.ceil(difference / 2.0)
-                        x_pad = (split, split)
-
-                    y_pad = (0, 0)
-                    if embedding_image.shape[2] < image_dimension:
-                        difference = image_dimension - embedding_image.shape[2]
-                        split = math.ceil(difference / 2.0)
-                        y_pad = (split, split)
-                    embedding_image = np.pad(embedding_image, ((0, 0), x_pad, y_pad, (0, 0)), 'constant')
+                    embedding_image = resize_image(image, 160)
                     embedding = embedder.embed(embedding_image)
                     embedding = embedding.flatten()
                     c.execute('INSERT INTO videos (id, embedding) values' +
@@ -122,7 +104,7 @@ if __name__ == '__main__':
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
     # changed from 3 to 2
-    populate_database(video_directory, embedder, pose_estimator, c, 50)
+    populate_database(video_directory, embedder, pose_estimator, c, 10)
     batch_size = 10
 
     c.execute('SELECT * FROM frames')

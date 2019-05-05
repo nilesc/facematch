@@ -5,6 +5,8 @@ from PIL import Image
 from setup_database import adapt_array, convert_array
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
+import face_recognition
+from helpers import resize_image
 
 
 def find_n_closest(options, target, n):
@@ -37,8 +39,9 @@ def find_smallest_angle_difference(options, target):
 
 
 def get_best_match(conn, embedder, pose_estimator, image):
-    input_embedding = embedder.embed(input_image)
-    input_pose = pose_estimator.estimate_pose(input_image)
+    image_to_embed = np.expand_dims(np.array(image), 0)
+    input_embedding = embedder.embed(image_to_embed)
+    input_pose = pose_estimator.estimate_pose(image)
 
     c = conn.cursor()
     c.execute('SELECT embedding FROM videos')
@@ -74,18 +77,14 @@ if __name__ == '__main__':
     embedder = Embedder(facenet_protobuf)
     pose_estimator = PoseEstimator(pose_weights)
 
-    # changes made starting here
-    # can now input a real image instead of a random one
     input_image = Image.open(input_image_path)
-    image_dimension = 160
-    embedding_image = input_image.resize((image_dimension, image_dimension))
-    embedding_image = np.array(embedding_image)
-    embedding_image = np.expand_dims(embedding_image, 0)
-    image_array = np.array(embedding_image)
+    as_array = np.array(input_image)
+    possible_bounds = face_recognition.api.face_locations(as_array)
+    input_image_bounds = list(possible_bounds[0])
+    rotated = input_image_bounds[-1:] + input_image_bounds[:-1]
+    input_image = input_image.crop(rotated)
+    embedding_image = resize_image(input_image, 160)
+    embedding_image = Image.fromarray(embedding_image[0].astype('uint8'),
+                                      'RGB')
 
-    if len(image_array.shape) != 4:
-        print("image less than 4d")
-        image_array = image_array.reshape(1, image_array.shape[0], image_array.shape[1], image_array.shape[2])
-    input_image = image_array
-
-    print(get_best_match(conn, embedder, pose_estimator, image_array))
+    print(get_best_match(conn, embedder, pose_estimator, embedding_image))
