@@ -62,8 +62,8 @@ def populate_database(video_directory,
                     downscale_factor = image_dimension / max(bounding_box_dimensions_x, bounding_box_dimensions_y)
                     embedding_image = image.copy().resize((int(bounding_box_dimensions_x * downscale_factor),
                                           int(bounding_box_dimensions_y * downscale_factor)))
-                    embedding_image = np.array(image)
-                    embedding_image = np.expand_dims(image, 0)
+                    embedding_image = np.array(embedding_image)
+                    embedding_image = np.expand_dims(embedding_image, 0)
                     x_pad = (0, 0)
                     if embedding_image.shape[1] < image_dimension:
                         difference = image_dimension - embedding_image.shape[1]
