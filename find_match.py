@@ -84,6 +84,7 @@ if __name__ == '__main__':
     rotated = input_image_bounds[-1:] + input_image_bounds[:-1]
     input_image = input_image.crop(rotated)
     embedding_image = resize_image(input_image, 160)
-    embedding_image = Image.fromarray(embedding_image[0].astype('uint8'), 'RGB')
+    embedding_image = Image.fromarray(embedding_image[0].astype('uint8'),
+                                      'RGB')
 
     print(get_best_match(conn, embedder, pose_estimator, embedding_image))
