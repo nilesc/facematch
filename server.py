@@ -61,10 +61,11 @@ def res():
 		proc = subprocess.Popen(['python3', 'find_match_user_study.py',  'video_database.db', '20170512-110547/20170512-110547.pb', 'hopenet_robust_alpha1.pkl', UPLOADED_FILE], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		out = proc.communicate()[0]
 		out = out.decode('ascii')
-		print('-----------------------------------')
+		print('-------------------------------------OUTPUT:----------------------------------')
 		out = out.split('\n')
+		print(out)
 		res = {}
-		for x in range(5,9):
+		for x in range(2,6):
 			file_returned = out[x]
 			f_name = file_returned.split('/')[-1]
 			res['file_returned_' + str(x)] = "static/" + f_name

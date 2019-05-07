@@ -15,7 +15,7 @@ def find_n_closest(options, target, n):
     repeated_target = np.repeat(target, options.shape[0], 0)
     difference = options - repeated_target
     norms = np.linalg.norm(difference, axis=1)
-    closest = np.argpartition(norms, 1)
+    closest = np.argpartition(norms, n)
     return closest[:n]
 
 
@@ -36,14 +36,16 @@ def find_smallest_angle_difference(options, target):
     dots = np.tensordot(options, target, axes=([1], [1]))
     clipped = np.clip(dots, -1.0, 1.0)
     differences = np.arccos(clipped)
+
+    """
+    sorted_ = np.argsort(differences, axis=None)
+    return sorted_[:4]
+    """
+
     results = []
     min_ = np.argmin(differences)
     results.append(min_)
-    for x in range(3):
-        rand_num = random.random(0,len(differences))
-        while rand_num == min_ or rand_num in results:
-            rand_num = random.random(0,len(differences))
-        results.append(rand_num)
+    return results, differences
 
 
 
@@ -64,9 +66,31 @@ def get_best_match(conn, embedder, pose_estimator, image):
 
     c.execute(query)
     paths, poses = zip(*c.fetchall())
-    best_frame_index = find_smallest_angle_difference(np.array(poses),
-                                                      input_pose)
-    return paths[best_frame_index]
+    best_frame_indexes, diff_ = find_smallest_angle_difference(np.array(poses), input_pose)
+
+    results = []
+    results.append(paths[best_frame_indexes[0]])
+    print(results[0])
+    idx_list = []
+    for x in range(3):
+        rand_num = random.randint(0,len(diff_)-1)
+        while rand_num == best_frame_indexes[0] or rand_num in idx_list:
+            rand_num = random.randint(0,len(diff_)-1)
+        rand_path = paths[rand_num]
+        rand_path = rand_path.split('/')
+        rand_celeb = rand_path[1]
+        for names in results:
+            while rand_celeb in names or rand_num in idx_list:
+                rand_num = random.randint(0,len(diff_)-1)
+                rand_path = paths[rand_num]
+                rand_path = rand_path.split('/')
+                rand_celeb = rand_path[1]
+        idx_list.append(rand_num)
+        results.append('/'.join(rand_path))
+
+
+    random.shuffle(results)
+    return results
 
 
 if __name__ == '__main__':
@@ -96,6 +120,7 @@ if __name__ == '__main__':
     embedding_image = Image.fromarray(embedding_image[0].astype('uint8'),
                                       'RGB')
 
-    results = get_best_match(conn, embedder, pose_estimator, image_array)
+    results = get_best_match(conn, embedder, pose_estimator, embedding_image)
+
     for item in results:
         print(item)
