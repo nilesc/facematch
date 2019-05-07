@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
-from helpers import resize_image
+from helpers import crop_to_face
 
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
@@ -44,29 +44,18 @@ def populate_database(video_directory,
             embedding = None
             for frame_number, row in enumerate(csv_data):
                 image_path = row[0].replace('\\', '/')
-                face_center_x = int(row[2])
-                face_center_y = int(row[3])
-                bounding_box_dimensions_x = int(row[4])
-                bounding_box_dimensions_y = int(row[5])
                 image_path = os.path.join(video_directory, image_path)
                 image = Image.open(image_path)
-
-                left = face_center_x - bounding_box_dimensions_x/2
-                right = face_center_x + bounding_box_dimensions_x/2
-                top = face_center_y - bounding_box_dimensions_y/2
-                bottom = face_center_y + bounding_box_dimensions_y/2
-
-                pose_image = image.crop((left, top, right, bottom))
+                image = crop_to_face(image)
 
                 if embedding is None:
-                    embedding_image = resize_image(image, 160)
-                    embedding = embedder.embed(embedding_image)
+                    embedding = embedder.embed(image)
                     embedding = embedding.flatten()
                     c.execute('INSERT INTO videos (id, embedding) values' +
                               '  (?, ?)',
                               (person_number, embedding))
 
-                pose = pose_estimator.estimate_pose(pose_image)
+                pose = pose_estimator.estimate_pose(image)
                 c.execute('INSERT INTO frames (video_id, image_path, pose)' +
                           ' values (?, ?, ?)',
                           (frame_number, image_path, pose))
