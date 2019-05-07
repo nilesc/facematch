@@ -44,12 +44,24 @@ def populate_database(video_directory,
             csv_data = csv.reader(info_file, delimiter=',')
             embedding = None
             csv_data = list(csv_data)
-            bar = IncrementalBar(f'Adding person {person_number} of {num_people}', max=len(csv_data))
-            for frame_number, row in enumerate(csv_data):
-                image_path = row[0].replace('\\', '/')
+            max_frames = 20
+            bar = IncrementalBar(f'Adding person {person_number + 1:>3} of {num_people:>3}',
+                                 max=min(len(csv_data), max_frames))
+
+            frame_indices = np.arange(len(csv_data))
+            if len(csv_data) > max_frames:
+                frame_indices = np.linspace(0, len(csv_data) - 1, num=max_frames)
+                frame_indices = frame_indices.astype(np.uint8)
+
+            for frame_num in frame_indices:
+                image_path = csv_data[frame_num][0].replace('\\', '/')
                 image_path = os.path.join(video_directory, image_path)
                 image = Image.open(image_path)
                 image = crop_to_face(image)
+
+                if image is None:
+                    bar.next()
+                    continue
 
                 if embedding is None:
                     embedding = embedder.embed(image)
@@ -61,9 +73,13 @@ def populate_database(video_directory,
                 pose = pose_estimator.estimate_pose(image)
                 landmarks = get_normalized_landmarks(image)
 
+                if landmarks is None:
+                    bar.next()
+                    continue
+
                 c.execute('INSERT INTO frames (video_id, image_path, pose, landmarks)' +
                           ' values (?, ?, ?, ?)',
-                          (frame_number, image_path, pose, landmarks))
+                          (person_number, image_path, pose, landmarks))
                 bar.next()
         print()
 
@@ -97,8 +113,6 @@ if __name__ == '__main__':
              landmarks array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
-    # changed from 3 to 2
-    populate_database(video_directory, embedder, pose_estimator, c, 2)
-    batch_size = 10
+    populate_database(video_directory, embedder, pose_estimator, c, 20)
 
     conn.commit()

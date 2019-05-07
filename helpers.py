@@ -9,7 +9,10 @@ def get_normalized_landmarks(image):
     landmarks = []
     image = np.array(image)
 
-    features = face_recognition.face_landmarks(image)[0]
+    features = face_recognition.face_landmarks(image)
+    if not features:
+        return None
+    features = features[0]
     for feature in sorted(features.keys()):
         landmarks.extend(features[feature])
 
@@ -21,6 +24,9 @@ def get_normalized_landmarks(image):
 def crop_to_face(image):
     as_array = np.array(image)
     possible_bounds = face_recognition.api.face_locations(as_array)
+
+    if not possible_bounds:
+        return None
 
     # If multiple faces are found, choose the first arbitrarily
     face_bounds = list(possible_bounds[0])
