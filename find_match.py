@@ -14,7 +14,7 @@ def find_n_closest(options, target, n):
     repeated_target = np.repeat(target, options.shape[0], 0)
     difference = options - repeated_target
     norms = np.linalg.norm(difference, axis=1)
-    closest = np.argpartition(norms, 1)
+    closest = np.argpartition(norms, n)
     return closest[:n]
 
 
