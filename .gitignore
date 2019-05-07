@@ -24,6 +24,10 @@ __pycache__/
 
 # Frame data
 frame_images_DB/
+headpose_DB/
+
+# DS_store
+.DS_store
 
 # Distribution / packaging
 .Python
