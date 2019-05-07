@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
-from helpers import crop_to_face
+from helpers import crop_to_face, get_normalized_landmarks
 
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
@@ -56,9 +56,11 @@ def populate_database(video_directory,
                               (person_number, embedding))
 
                 pose = pose_estimator.estimate_pose(image)
-                c.execute('INSERT INTO frames (video_id, image_path, pose)' +
-                          ' values (?, ?, ?)',
-                          (frame_number, image_path, pose))
+                landmarks = get_normalized_landmarks(image)
+
+                c.execute('INSERT INTO frames (video_id, image_path, pose, landmarks)' +
+                          ' values (?, ?, ?, ?)',
+                          (frame_number, image_path, pose, landmarks))
                 print(person_number)
 
 
@@ -90,10 +92,11 @@ if __name__ == '__main__':
             (video_id INTEGER,
              image_path STRING,
              pose array,
+             landmarks array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
     # changed from 3 to 2
-    populate_database(video_directory, embedder, pose_estimator, c, 10)
+    populate_database(video_directory, embedder, pose_estimator, c, 2)
     batch_size = 10
 
     c.execute('SELECT * FROM frames')
