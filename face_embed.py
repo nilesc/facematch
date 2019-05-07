@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import tensorflow as tf
 from timeit import timeit
+from helpers import resize_image, embedding_dim
 
 
 class Embedder:
@@ -19,14 +20,15 @@ class Embedder:
 
         self.graph = graph
 
-    def embed(self, images):
+    def embed(self, image):
+        image = resize_image(image, embedding_dim)
         image_input = self.graph.get_tensor_by_name('prefix/input:0')
         phase_train = self.graph.get_tensor_by_name('prefix/phase_train:0')
         embedding = self.graph.get_tensor_by_name('prefix/embeddings:0')
 
         with tf.Session(graph=self.graph) as sess:
             return sess.run(embedding, feed_dict={
-                image_input: images,
+                image_input: image,
                 phase_train: False,
             })
 

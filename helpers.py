@@ -3,8 +3,10 @@ from PIL import Image
 import face_recognition
 import numpy as np
 
+embedding_dim = 160
 
-def crop_to_face(image, image_dimension):
+
+def crop_to_face(image):
     as_array = np.array(image)
     possible_bounds = face_recognition.api.face_locations(as_array)
 
@@ -14,16 +16,13 @@ def crop_to_face(image, image_dimension):
     # The face_recognition and PIL libraries take input in different formats.
     # Rotate the results for compatibility.
     rotated = face_bounds[-1:] + face_bounds[:-1]
-    image = image.crop(rotated)
-
-    embedding_image = resize_image(image, image_dimension)
-    return Image.fromarray(embedding_image[0].astype('uint8'), 'RGB')
+    return image.crop(rotated)
 
 
 def resize_image(image, image_dimension):
     scale_factor = image_dimension / max(*image.size)
-    embedding_image = image.copy().resize((int(image.size[0] * scale_factor),
-                                           int(image.size[1] * scale_factor)))
+    embedding_image = image.resize((int(image.size[0] * scale_factor),
+                                    int(image.size[1] * scale_factor)))
     embedding_image = np.array(embedding_image)
     embedding_image = np.expand_dims(embedding_image, 0)
     x_pad = (0, 0)

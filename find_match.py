@@ -39,8 +39,7 @@ def find_smallest_angle_difference(options, target):
 
 
 def get_best_match(conn, embedder, pose_estimator, image):
-    image_to_embed = np.expand_dims(np.array(image), 0)
-    input_embedding = embedder.embed(image_to_embed)
+    input_embedding = embedder.embed(image)
     input_pose = pose_estimator.estimate_pose(image)
 
     c = conn.cursor()
@@ -78,6 +77,6 @@ if __name__ == '__main__':
     pose_estimator = PoseEstimator(pose_weights)
 
     input_image = Image.open(input_image_path)
-    embedding_image = crop_to_face(input_image, 160)
+    input_image = crop_to_face(input_image)
 
-    print(get_best_match(conn, embedder, pose_estimator, embedding_image))
+    print(get_best_match(conn, embedder, pose_estimator, input_image))
