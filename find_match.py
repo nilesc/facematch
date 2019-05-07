@@ -6,22 +6,30 @@ from setup_database import adapt_array, convert_array
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
 import face_recognition
-from helpers import crop_to_face
+from helpers import crop_to_face, get_normalized_landmarks
 
 
 def find_n_closest(options, target, n):
-    options = options.reshape(options.shape[0], -1)
-    repeated_target = np.repeat(target, options.shape[0], 0)
-    difference = options - repeated_target
-    norms = np.linalg.norm(difference, axis=1)
+    if not n < options.shape[0]:
+        return np.arange(options.shape[0])
+    norms = get_euclidean_distances(options, target)
     closest = np.argpartition(norms, n)
     return closest[:n]
+
+
+def get_euclidean_distances(options, target):
+    options = options.reshape(options.shape[0], -1)
+    target = target.flatten()
+    target = np.expand_dims(target, 0)
+    repeated_target = np.repeat(target, options.shape[0], 0)
+    difference = options - repeated_target
+    return np.linalg.norm(difference, axis=1)
 
 
 # Math based on code from:
 # https://stackoverflow.com/questions/2827393/
 # angles-between-two-n-dimensional-vectors-in-python/13849249#13849249
-def find_smallest_angle_difference(options, target):
+def get_angle_differences(options, target):
     # Conver target to a unit vector
     target = target / np.linalg.norm(target)
 
@@ -35,12 +43,13 @@ def find_smallest_angle_difference(options, target):
     dots = np.tensordot(options, target, axes=([1], [1]))
     clipped = np.clip(dots, -1.0, 1.0)
     differences = np.arccos(clipped)
-    return np.argmin(differences)
+    return differences
 
 
 def get_best_match(conn, embedder, pose_estimator, image):
     input_embedding = embedder.embed(image)
     input_pose = pose_estimator.estimate_pose(image)
+    input_landmarks = get_normalized_landmarks(image)
 
     c = conn.cursor()
     c.execute('SELECT embedding FROM videos')
@@ -49,14 +58,27 @@ def get_best_match(conn, embedder, pose_estimator, image):
     num_people = 5
     candidates = find_n_closest(embeddings, input_embedding, num_people)
 
-    query = "SELECT image_path, pose FROM frames WHERE video_id IN " + \
+    query = 'SELECT image_path, pose, landmarks FROM frames WHERE video_id IN ' + \
             str(tuple(candidates))
 
     c.execute(query)
-    paths, poses = zip(*c.fetchall())
-    best_frame_index = find_smallest_angle_difference(np.array(poses),
-                                                      input_pose)
-    return paths[best_frame_index]
+    paths, poses, landmarks = zip(*c.fetchall())
+    landmarks = np.array(landmarks)
+    poses = np.array(poses)
+    # best_frame_index = find_smallest_angle_difference(np.array(poses),
+    #                                                   input_pose)
+    # return paths[best_frame_index]
+    pose_differences = get_angle_differences(poses, input_pose).flatten()
+    print(f'Pose differences: {pose_differences}')
+    landmark_differences = get_euclidean_distances(landmarks, input_landmarks).flatten()
+    print(f'Landmark differences: {landmark_differences}')
+    combination_ratio = 0.90
+    combined = combination_ratio * pose_differences + \
+               (1 - combination_ratio) * landmark_differences
+    print(f'Combined: {combined}')
+
+    best_option = np.argmin(combined)
+    return paths[best_option]
 
 
 if __name__ == '__main__':

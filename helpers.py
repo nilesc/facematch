@@ -5,6 +5,19 @@ import numpy as np
 embedding_dim = 160
 
 
+def get_normalized_landmarks(image):
+    landmarks = []
+    image = np.array(image)
+
+    features = face_recognition.face_landmarks(image)[0]
+    for feature in sorted(features.keys()):
+        landmarks.extend(features[feature])
+
+    landmarks = np.array(landmarks, dtype=np.float32)
+    landmarks[:, 0] = landmarks[:, 0] / image.shape[0]
+    landmarks[:, 1] = landmarks[:, 1] / image.shape[1]
+    return landmarks
+
 def crop_to_face(image):
     as_array = np.array(image)
     possible_bounds = face_recognition.api.face_locations(as_array)

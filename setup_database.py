@@ -8,7 +8,8 @@ import numpy as np
 from PIL import Image
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
-from helpers import crop_to_face
+from helpers import crop_to_face, get_normalized_landmarks
+from progress.bar import IncrementalBar
 
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
@@ -42,6 +43,8 @@ def populate_database(video_directory,
         with open(frame_info) as info_file:
             csv_data = csv.reader(info_file, delimiter=',')
             embedding = None
+            csv_data = list(csv_data)
+            bar = IncrementalBar(f'Adding person {person_number} of {num_people}', max=len(csv_data))
             for frame_number, row in enumerate(csv_data):
                 image_path = row[0].replace('\\', '/')
                 image_path = os.path.join(video_directory, image_path)
@@ -56,10 +59,13 @@ def populate_database(video_directory,
                               (person_number, embedding))
 
                 pose = pose_estimator.estimate_pose(image)
-                c.execute('INSERT INTO frames (video_id, image_path, pose)' +
-                          ' values (?, ?, ?)',
-                          (frame_number, image_path, pose))
-                print(person_number)
+                landmarks = get_normalized_landmarks(image)
+
+                c.execute('INSERT INTO frames (video_id, image_path, pose, landmarks)' +
+                          ' values (?, ?, ?, ?)',
+                          (frame_number, image_path, pose, landmarks))
+                bar.next()
+        print()
 
 
 if __name__ == '__main__':
@@ -70,8 +76,6 @@ if __name__ == '__main__':
     video_directory = sys.argv[1]
     facenet_protobuf = sys.argv[2]
     pose_weights = sys.argv[3]
-
-    print(video_directory, facenet_protobuf, pose_weights)
 
     embedder = Embedder(facenet_protobuf)
     pose_estimator = PoseEstimator(pose_weights)
@@ -90,13 +94,11 @@ if __name__ == '__main__':
             (video_id INTEGER,
              image_path STRING,
              pose array,
+             landmarks array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
     # changed from 3 to 2
-    populate_database(video_directory, embedder, pose_estimator, c, 10)
+    populate_database(video_directory, embedder, pose_estimator, c, 2)
     batch_size = 10
 
-    c.execute('SELECT * FROM frames')
-    data = c.fetchall()
     conn.commit()
-    print(data)
