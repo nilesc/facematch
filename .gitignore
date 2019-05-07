@@ -26,6 +26,9 @@ __pycache__/
 frame_images_DB/
 headpose_DB/
 
+# Uploaded images
+templates/uploads/*
+
 # DS_store
 .DS_store
 
