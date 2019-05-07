@@ -6,7 +6,7 @@ from setup_database import adapt_array, convert_array
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
 import face_recognition
-from helpers import resize_image
+from helpers import crop_to_face
 
 
 def find_n_closest(options, target, n):
@@ -39,8 +39,7 @@ def find_smallest_angle_difference(options, target):
 
 
 def get_best_match(conn, embedder, pose_estimator, image):
-    image_to_embed = np.expand_dims(np.array(image), 0)
-    input_embedding = embedder.embed(image_to_embed)
+    input_embedding = embedder.embed(image)
     input_pose = pose_estimator.estimate_pose(image)
 
     c = conn.cursor()
@@ -78,13 +77,6 @@ if __name__ == '__main__':
     pose_estimator = PoseEstimator(pose_weights)
 
     input_image = Image.open(input_image_path)
-    as_array = np.array(input_image)
-    possible_bounds = face_recognition.api.face_locations(as_array)
-    input_image_bounds = list(possible_bounds[0])
-    rotated = input_image_bounds[-1:] + input_image_bounds[:-1]
-    input_image = input_image.crop(rotated)
-    embedding_image = resize_image(input_image, 160)
-    embedding_image = Image.fromarray(embedding_image[0].astype('uint8'),
-                                      'RGB')
+    input_image = crop_to_face(input_image)
 
-    print(get_best_match(conn, embedder, pose_estimator, embedding_image))
+    print(get_best_match(conn, embedder, pose_estimator, input_image))
