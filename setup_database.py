@@ -30,7 +30,8 @@ def populate_database(video_directory,
                       embedder,
                       pose_estimator,
                       cursor,
-                      num_people=None):
+                      num_people=None,
+                      frames_per_person=None):
     folders = [f for f in os.listdir(video_directory)
                if os.path.isdir(os.path.join(video_directory, f))]
     for person_number, folder in enumerate(folders):
@@ -44,13 +45,15 @@ def populate_database(video_directory,
             csv_data = csv.reader(info_file, delimiter=',')
             embedding = None
             csv_data = list(csv_data)
-            max_frames = 20
+            num_frames = len(csv_data)
+            if frames_per_person:
+                num_frames = min(len(csv_data), frames_per_person)
             bar = IncrementalBar(f'Adding person {person_number + 1:>3} of {num_people:>3}',
-                                 max=min(len(csv_data), max_frames))
+                                 max=num_frames)
 
             frame_indices = np.arange(len(csv_data))
-            if len(csv_data) > max_frames:
-                frame_indices = np.linspace(0, len(csv_data) - 1, num=max_frames)
+            if frames_per_person and len(csv_data) > frames_per_person:
+                frame_indices = np.linspace(0, len(csv_data) - 1, num=frames_per_person)
                 frame_indices = frame_indices.astype(np.uint8)
 
             for frame_num in frame_indices:
@@ -113,6 +116,6 @@ if __name__ == '__main__':
              landmarks array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
-    populate_database(video_directory, embedder, pose_estimator, c, 20)
+    populate_database(video_directory, embedder, pose_estimator, c, 20, 20)
 
     conn.commit()
