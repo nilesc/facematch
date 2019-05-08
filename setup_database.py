@@ -8,7 +8,8 @@ import numpy as np
 from PIL import Image
 from face_embed import Embedder
 from pose_estimator import PoseEstimator
-from helpers import resize_image
+from helpers import crop_to_face, get_normalized_landmarks
+from progress.bar import IncrementalBar
 
 
 # Based on: https://www.pythonforthelab.com/blog/storing-data-with-sqlite/
@@ -29,7 +30,8 @@ def populate_database(video_directory,
                       embedder,
                       pose_estimator,
                       cursor,
-                      num_people=None):
+                      num_people=None,
+                      frames_per_person=None):
     folders = [f for f in os.listdir(video_directory)
                if os.path.isdir(os.path.join(video_directory, f))]
     for person_number, folder in enumerate(folders):
@@ -42,35 +44,47 @@ def populate_database(video_directory,
         with open(frame_info) as info_file:
             csv_data = csv.reader(info_file, delimiter=',')
             embedding = None
-            for frame_number, row in enumerate(csv_data):
-                image_path = row[0].replace('\\', '/')
-                face_center_x = int(row[2])
-                face_center_y = int(row[3])
-                bounding_box_dimensions_x = int(row[4])
-                bounding_box_dimensions_y = int(row[5])
+            csv_data = list(csv_data)
+            num_frames = len(csv_data)
+            if frames_per_person:
+                num_frames = min(len(csv_data), frames_per_person)
+            bar = IncrementalBar(f'Adding person {person_number + 1:>3} of {num_people:>3}',
+                                 max=num_frames)
+
+            frame_indices = np.arange(len(csv_data))
+            if frames_per_person and len(csv_data) > frames_per_person:
+                frame_indices = np.linspace(0, len(csv_data) - 1, num=frames_per_person)
+                frame_indices = frame_indices.astype(np.uint8)
+
+            for frame_num in frame_indices:
+                image_path = csv_data[frame_num][0].replace('\\', '/')
                 image_path = os.path.join(video_directory, image_path)
                 image = Image.open(image_path)
+                image = crop_to_face(image)
 
-                left = face_center_x - bounding_box_dimensions_x/2
-                right = face_center_x + bounding_box_dimensions_x/2
-                top = face_center_y - bounding_box_dimensions_y/2
-                bottom = face_center_y + bounding_box_dimensions_y/2
-
-                pose_image = image.crop((left, top, right, bottom))
+                if image is None:
+                    bar.next()
+                    continue
 
                 if embedding is None:
-                    embedding_image = resize_image(image, 160)
-                    embedding = embedder.embed(embedding_image)
+                    embedding = embedder.embed(image)
                     embedding = embedding.flatten()
                     c.execute('INSERT INTO videos (id, embedding) values' +
                               '  (?, ?)',
                               (person_number, embedding))
 
-                pose = pose_estimator.estimate_pose(pose_image)
-                c.execute('INSERT INTO frames (video_id, image_path, pose)' +
-                          ' values (?, ?, ?)',
-                          (frame_number, image_path, pose))
-                print(person_number)
+                pose = pose_estimator.estimate_pose(image)
+                landmarks = get_normalized_landmarks(image)
+
+                if landmarks is None:
+                    bar.next()
+                    continue
+
+                c.execute('INSERT INTO frames (video_id, image_path, pose, landmarks)' +
+                          ' values (?, ?, ?, ?)',
+                          (person_number, image_path, pose, landmarks))
+                bar.next()
+        print()
 
 
 if __name__ == '__main__':
@@ -81,8 +95,6 @@ if __name__ == '__main__':
     video_directory = sys.argv[1]
     facenet_protobuf = sys.argv[2]
     pose_weights = sys.argv[3]
-
-    print(video_directory, facenet_protobuf, pose_weights)
 
     embedder = Embedder(facenet_protobuf)
     pose_estimator = PoseEstimator(pose_weights)
@@ -101,13 +113,9 @@ if __name__ == '__main__':
             (video_id INTEGER,
              image_path STRING,
              pose array,
+             landmarks array,
              FOREIGN KEY(video_id) REFERENCES videos(id))''')
 
-    # changed from 3 to 2
-    populate_database(video_directory, embedder, pose_estimator, c, 10)
-    batch_size = 10
+    populate_database(video_directory, embedder, pose_estimator, c, 20, 20)
 
-    c.execute('SELECT * FROM frames')
-    data = c.fetchall()
     conn.commit()
-    print(data)

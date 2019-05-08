@@ -22,7 +22,7 @@ class PoseEstimator:
                                    map_location=map_location))
         desired_dim = 224
         self.transform_input = transforms.Compose([
-            transforms.Resize(224),
+            transforms.Resize(desired_dim),
             transforms.CenterCrop(desired_dim),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
