@@ -81,7 +81,7 @@ def res():
 @app.route('/results-final.html')
 def res_final():
 	if UPLOADED_FILE:
-		proc = subprocess.Popen(['python3', 'find_match.py',  'video_database.db', '20170512-110547/20170512-110547.pb', 'hopenet_robust_alpha1.pkl', UPLOADED_FILE], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+		proc = subprocess.Popen(['python3', 'find_match.py',  'video_database.db', 'facenet_weights/20170512-110547.pb', 'hopenet_robust_alpha1.pkl', UPLOADED_FILE], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		out = proc.communicate()[0]
 		out = out.decode('ascii')
 		print(out)
