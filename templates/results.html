@@ -6,21 +6,61 @@
 	<meta name="viewport" content="width=device-width">
 	<link rel="stylesheet" href="css/styles.css">
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+	<script type="text/javascript">
+		var count = 0;
+
+		function incrementCount(){
+		   count++;
+		   document.write(count);
+		}
+	</script>
 </head>
 <body>
 
+	<nav class="navbar fixed-top navbar-dark bg-dark">
+		<a class="navbar-brand" href="#">FaceMatch</a>
+			<form class="form-inline">
+				<a href="index.html">
+				<button class="btn btn-sm btn-outline-secondary" type="button">Home</button>
+				</a>
+				&nbsp;
+				&nbsp;
+				<a href="userstudy.html">
+				<button class="btn btn-sm btn-outline-secondary" type="button">User Study</button>
+				</a>
+				&nbsp;
+				&nbsp;
+				<a href="demo.html">
+				<button class="btn btn-sm btn-outline-secondary" type="button">Final Demo</button>
+				</a>
+			</form>
+	</nav>
+
+
 	<div class="container">
+		<br>
+		<br>
+		<br>
 		<div class="row justify-content-md-center">
 			<h1 class="display-3">Results</h1>
 		</div>
 		<div class="row">
 			<p>Up to 10 pictures may show up. Please select Yes if you believe that the image looks similar to the one that you submitted. Else, select No.</p>
 		</div>
+		<div class="row">
 		{% for key, value in result.items() %}
-			<div class="row">
+			<div class="col-3">
 				<img src="{{value}}" height=200></img>
+					<h3>
+						<br>
+						<script type="text/javascript">
+							incrementCount();
+						</script>
+					</h3>
 			</div>
 		{% endfor %}
+		</div>
 		<br>
 		<br>
 		<br>
